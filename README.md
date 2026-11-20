@@ -1,5 +1,7 @@
 # HuurHub
 
+_HuurHub is een product van Optivue._
+
 Alle huurwoningen van Nederland overzichtelijk op één plek. HuurHub haalt het openbare aanbod op van 26 verhuurportalen (woningcorporaties en studentenhuisvesters) en toont het op een kaart en in een lijst.
 
 ## Starten

@@ -145,7 +145,7 @@ function Footer() {
       <div><h4>Hulp</h4><ul><li><a href="/veelgestelde-vragen">Veelgestelde vragen</a></li><li><a href="/woning-plaatsen">Woning plaatsen</a></li><li><a href="/woningen#mijn">Mijn woningen</a></li></ul></div>
       <div><h4>Juridisch</h4><ul><li><a href="/privacy">Privacybeleid</a></li><li><a href="/voorwaarden">Algemene voorwaarden</a></li></ul></div>
     </div>
-    <div class="footer-bottom"><span>© ${new Date().getFullYear()} HuurHub</span><span>Woningaanbod van de genoemde verhuurportalen · Kaart © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></span></div>
+    <div class="footer-bottom"><span>© ${new Date().getFullYear()} HuurHub · HuurHub is een product van Optivue</span><span>Woningaanbod van de genoemde verhuurportalen · Kaart © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></span></div>
   </div></footer>`;
 }
 function mountChrome(active) {
