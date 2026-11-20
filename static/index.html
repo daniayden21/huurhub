@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HuurHub · Vind jouw plek in Nederland</title>
+<meta name="description" content="Alle huurwoningen overzichtelijk op één plek. Sociale huur, studentenkamers en middenhuur van verhuurportalen in heel Nederland.">
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/style.css">
+<style>
+/* hero */
+.hero { padding-block: 56px 72px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+.hero-live { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--text-2); background: var(--gray-bg); border-radius: 999px; padding: 6px 14px 6px 10px; }
+.hero-live i { width: 8px; height: 8px; border-radius: 50%; background: #22a06b; box-shadow: 0 0 0 3px rgb(34 160 107 / .18); }
+.hero h1 { font-size: clamp(40px, 5.6vw, 66px); letter-spacing: -0.04em; line-height: 1.02; margin-top: 18px; }
+.hero h1 span { color: var(--orange); }
+.hero .lead { font-size: clamp(17px, 1.6vw, 20px); color: var(--text-2); margin-top: 16px; }
+.searchbar { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; background: #fff; padding: 12px; border-radius: var(--r-lg); box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+.searchbar .sb-where { grid-column: 1 / -1; }
+.searchbar .field { height: 54px; }
+.searchbar .btn { height: 54px; }
+.hero-quick { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 18px; font-size: 14px; color: var(--text-2); align-items: center; }
+.hero-quick a { color: var(--navy); font-weight: 600; text-decoration: none; border-bottom: 1.5px solid var(--border); }
+.hero-quick a:hover { border-color: var(--orange); color: var(--orange); }
+.hero-photo { position: relative; }
+.hero-photo .ph { border-radius: 22px; overflow: hidden; aspect-ratio: 5 / 5.4; background: var(--blue-bg); }
+.hero-photo .ph img { width: 100%; height: 100%; object-fit: cover; }
+.hero-tile { position: absolute; left: -32px; bottom: 32px; width: 290px; background: #fff; border-radius: var(--r); box-shadow: var(--shadow-lg); padding: 10px; display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: center; text-decoration: none; transition: transform .2s; }
+.hero-tile:hover { transform: translateY(-3px); }
+.hero-tile .t-img { width: 76px; height: 64px; border-radius: 10px; background: var(--blue-bg) center/cover; }
+.hero-tile b { display: block; font-size: 17px; }
+.hero-tile span { display: block; font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-tile small { font-size: 11.5px; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: .06em; }
+.hero-stats { position: absolute; right: 20px; top: 20px; background: rgb(255 255 255 / .95); border-radius: var(--r); padding: 12px 16px; box-shadow: var(--shadow); display: grid; gap: 0; }
+.hero-stats b { font-size: 24px; letter-spacing: -0.02em; }
+.hero-stats span { font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+.credit { position: absolute; right: 12px; bottom: 10px; font-size: 10.5px; color: rgb(255 255 255 / .85); text-shadow: 0 1px 2px rgb(0 0 0 / .5); text-decoration: none; }
+
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+.sk-card { height: 380px; }
+
+/* locaties */
+.cities { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.city { position: relative; border-radius: var(--r-lg); overflow: hidden; aspect-ratio: 16 / 10; display: block; color: #fff; text-decoration: none; background: var(--navy); }
+.city img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+.city:hover img { transform: scale(1.05); }
+.city::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(7 32 69 / 0) 40%, rgb(7 32 69 / .82) 100%); }
+.city .c-txt { position: absolute; left: 20px; right: 20px; bottom: 18px; z-index: 1; display: flex; justify-content: space-between; align-items: end; gap: 10px; }
+.city h3 { font-size: 24px; color: #fff; }
+.city span { font-size: 14px; font-weight: 600; opacity: .9; }
+.city .go { width: 40px; height: 40px; border-radius: 50%; background: #fff; color: var(--navy); display: grid; place-items: center; flex: none; transition: background .15s, color .15s; }
+.city:hover .go { background: var(--orange); color: #fff; }
+.provwrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 28px; margin-top: 56px; align-items: stretch; }
+#provmap { border-radius: var(--r-lg); min-height: 460px; border: 1px solid var(--border); }
+.provlist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; }
+.provlist h3 { grid-column: 1 / -1; font-size: 22px; margin-bottom: 4px; }
+.provlist p { grid-column: 1 / -1; color: var(--text-2); margin-bottom: 8px; }
+.prov { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 13px 16px; border: 1px solid var(--border); border-radius: var(--r-sm); text-decoration: none; font-weight: 700; background: #fff; transition: border-color .15s, color .15s, box-shadow .15s; }
+.prov:hover, .prov.hl { border-color: var(--navy); box-shadow: var(--shadow); }
+.prov span { font-size: 13px; color: var(--text-2); font-weight: 600; }
+.bubble { transform: translate(-50%, -50%); display: grid; place-items: center; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 800; font-size: 13px; border: 3px solid #fff; box-shadow: 0 4px 14px rgb(7 32 69 / .25); cursor: pointer; transition: background .15s, transform .15s; }
+.bubble:hover, .bubble.hl { background: var(--orange); transform: translate(-50%, -50%) scale(1.08); }
+
+/* waarom */
+.why { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.why-item { padding: 28px 24px; border-radius: var(--r-lg); background: #fff; border: 1px solid var(--border); }
+.why-item .ic { width: 52px; height: 52px; border-radius: 14px; background: var(--blue-bg); color: var(--navy); display: grid; place-items: center; margin-bottom: 20px; }
+.why-item .ic svg { width: 26px; height: 26px; }
+.why-item h3 { font-size: 19px; }
+.why-item p { color: var(--text-2); margin-top: 8px; }
+
+/* zo werkt zoeken */
+.demo { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 56px; align-items: center; }
+.demo ul { list-style: none; padding: 0; margin: 24px 0 28px; display: grid; gap: 14px; }
+.demo li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; color: var(--text-2); }
+.demo li .icon { width: 22px; height: 22px; color: var(--orange); margin-top: 2px; }
+.demo li b { color: var(--navy); display: block; }
+.shot { border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-lg); background: #fff; }
+
+@media (max-width: 1080px) { .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .why { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) {
+  .hero-grid, .provwrap, .demo { grid-template-columns: 1fr; }
+  .hero { padding-block: 32px 56px; }
+  .hero-photo .ph { aspect-ratio: 16 / 11; }
+  .hero-tile { left: 12px; bottom: 12px; }
+  .cities { grid-template-columns: 1fr 1fr; }
+  #provmap { min-height: 380px; }
+}
+@media (max-width: 600px) {
+  .searchbar { grid-template-columns: 1fr 1fr; }
+  .searchbar .btn { grid-column: 1 / -1; }
+  .searchbar .field:not(.sb-where) .icon { display: none; }
+  .searchbar .field:not(.sb-where) { padding-inline: 12px; }
+  .grid4, .why { grid-template-columns: 1fr; }
+  .cities { grid-template-columns: 1fr; }
+  .hero-stats { display: none; }
+  .provlist { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<main>
+  <section class="hero"><div class="container hero-grid">
+    <div>
+      <span class="hero-live"><i></i><span id="live-line">Actueel aanbod uit heel Nederland</span></span>
+      <h1>Vind jouw plek in Nederland<span>.</span></h1>
+      <p class="lead">Alle huurwoningen overzichtelijk op één plek.</p>
+      <div id="sb"></div>
+      <div class="hero-quick"><span>Populair:</span><a href="/woningen?plaats=Amsterdam&km=10&max=1300">Amsterdam</a><a href="/woningen?plaats=Utrecht&km=10&max=1300">Utrecht</a><a href="/woningen?plaats=Rotterdam&km=10&max=1300">Rotterdam</a><a href="/woningen?sector=student&max=0">Studentenkamers</a><a href="/woningen?kans=1&max=0">Zonder wachttijd</a></div>
+    </div>
+    <div class="hero-photo">
+      <div class="ph"><img id="hero-img" alt="" fetchpriority="high"></div>
+      <a class="credit" id="hero-credit" target="_blank" rel="noopener"></a>
+      <div class="hero-stats"><b class="num" id="st-totaal">–</b><span>huurwoningen nu beschikbaar</span></div>
+      <a class="hero-tile" id="hero-tile" hidden></a>
+    </div>
+  </div></section>
+
+  <section class="section section-gray"><div class="container">
+    <div class="section-head"><div><h2>Populaire huurwoningen</h2><p>Recent geplaatste woningen met foto, verspreid over het land.</p></div><a class="btn" href="/woningen?sort=nieuw">Bekijk alle woningen</a></div>
+    <div class="grid4" id="popular"></div>
+  </div></section>
+
+  <section class="section"><div class="container">
+    <div class="section-head"><div><h2>Ontdek woningen per locatie</h2><p>Bekijk het aanbod in de grootste steden, of kies een provincie op de kaart.</p></div></div>
+    <div class="cities" id="cities"></div>
+    <div class="provwrap">
+      <div id="provmap" aria-label="Kaart van Nederland met het aantal huurwoningen per provincie"></div>
+      <div class="provlist" id="provlist"><h3>Zoek per provincie</h3><p>Klik op een provincie om alle woningen daar te zien.</p></div>
+    </div>
+  </div></section>
+
+  <section class="section section-gray"><div class="container">
+    <div class="section-head"><div><h2>Waarom HuurHub?</h2></div></div>
+    <div class="why">
+      <div class="why-item"><div class="ic" data-ic="layers"></div><h3>Alles op één plek</h3><p>Een overzicht van huurwoningen uit heel Nederland.</p></div>
+      <div class="why-item"><div class="ic" data-ic="sliders"></div><h3>Eenvoudig zoeken</h3><p>Vind woningen met handige filters.</p></div>
+      <div class="why-item"><div class="ic" data-ic="list"></div><h3>Overzichtelijk aanbod</h3><p>Bekijk belangrijke informatie direct.</p></div>
+      <div class="why-item"><div class="ic" data-ic="map"></div><h3>Landelijk zoeken</h3><p>Ontdek woningen in iedere Nederlandse provincie.</p></div>
+    </div>
+  </div></section>
+
+  <section class="section"><div class="container demo">
+    <div>
+      <h2 style="font-size:clamp(28px,3.4vw,40px)">Zoeken op de kaart en in de lijst</h2>
+      <ul>
+        <li><span data-i="check"></span><div><b>Plaats, budget en type in één balk</b>Kies hoe ver je wilt reizen en zie direct wat er in de buurt is.</div></li>
+        <li><span data-i="check"></span><div><b>Zonder wachttijd</b>Woningen met loting of direct reageren zijn oranje gemarkeerd.</div></li>
+        <li><span data-i="check"></span><div><b>Favorieten en reacties</b>Bewaar woningen en houd bij waar je hebt gereageerd.</div></li>
+      </ul>
+      <a class="btn btn-primary btn-lg" href="/woningen">Start met zoeken</a>
+    </div>
+    <div class="shot"><img src="/img/hub-desktop.png" alt="De zoekpagina van HuurHub met woningkaarten links en een kaart van Utrecht rechts" loading="lazy" width="1440" height="900"></div>
+  </div></section>
+
+  <div id="footer-slot"></div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/common.js"></script>
+<script>
+mountChrome("home");
+$("sb").innerHTML = SearchBar(); wireSearchBar($("searchbar"));
+document.querySelectorAll("[data-ic]").forEach((e) => (e.innerHTML = icon(e.dataset.ic)));
+document.querySelectorAll("[data-i]").forEach((e) => (e.outerHTML = icon(e.dataset.i)));
+$("hero-img").src = FOTOS.hero.src; $("hero-img").alt = FOTOS.hero.alt;
+$("hero-credit").href = FOTOS.hero.bron; $("hero-credit").textContent = `Foto: ${FOTOS.hero.maker}, ${FOTOS.hero.licentie}`;
+$("popular").innerHTML = Array.from({ length: 8 }, () => `<div class="skeleton sk-card"></div>`).join("");
+
+const CITIES = ["Amsterdam", "Rotterdam", "Utrecht", "Eindhoven", "Groningen", "Den Haag"];
+function renderCities(counts = {}) {
+  $("cities").innerHTML = CITIES.map((c) => `<a class="city" href="/woningen?plaats=${encodeURIComponent(c)}&km=10&max=0">
+    <img src="${FOTOS[c].src}" alt="" loading="lazy">
+    <div class="c-txt"><div><h3>${c}</h3><span>${counts[c] != null ? counts[c].toLocaleString("nl-NL") + " woningen in de stad" : "&nbsp;"}</span></div><span class="go">${icon("arrow")}</span></div></a>`).join("");
+}
+renderCities();
+
+// provinciekaart
+const pmap = L.map("provmap", { zoomControl: false, scrollWheelZoom: false, dragging: !L.Browser.mobile, attributionControl: true }).fitBounds([[50.75, 3.35], [53.55, 7.22]]);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 10, className: "tiles-soft", attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(pmap);
+new ResizeObserver(() => pmap.invalidateSize()).observe($("provmap"));
+function renderProvinces(prov = {}) {
+  const max = Math.max(1, ...Object.values(prov));
+  Object.entries(PROVINCIES).forEach(([p, ll]) => {
+    const n = prov[p] || 0, size = Math.round(34 + 30 * Math.sqrt(n / max));
+    const m = L.marker(ll, { icon: L.divIcon({ className: "", iconSize: [0, 0], html: `<div class="bubble" data-p="${p}" style="width:${size}px;height:${size}px">${n}</div>` }), title: `${p}: ${n} woningen`, keyboard: true });
+    m.on("click", () => (location.href = `/woningen?prov=${encodeURIComponent(p)}&max=0`));
+    m.on("mouseover", () => hl(p, true)); m.on("mouseout", () => hl(p, false));
+    m.addTo(pmap);
+  });
+  $("provlist").insertAdjacentHTML("beforeend", Object.keys(PROVINCIES).sort((a, b) => (prov[b] || 0) - (prov[a] || 0)).map((p) =>
+    `<a class="prov" data-p="${p}" href="/woningen?prov=${encodeURIComponent(p)}&max=0">${p}<span class="num">${(prov[p] || 0).toLocaleString("nl-NL")}</span></a>`).join(""));
+  $("provlist").querySelectorAll(".prov").forEach((a) => { a.onmouseenter = () => hl(a.dataset.p, true); a.onmouseleave = () => hl(a.dataset.p, false); });
+}
+function hl(p, on) { document.querySelectorAll(`[data-p="${p}"]`).forEach((e) => e.classList.toggle("hl", on)); }
+
+(async function load() {
+  try {
+    const s = await (await fetch("/api/summary")).json();
+    $("st-totaal").textContent = s.totaal.toLocaleString("nl-NL");
+    const last = Object.values(s.lastRefresh || {}).filter(Boolean).sort().pop();
+    $("live-line").textContent = `${s.totaal.toLocaleString("nl-NL")} huurwoningen · bijgewerkt ${ago(last)}`;
+    document.getElementById("dl-plaatsen").innerHTML = s.plaatsen.map((p) => `<option value="${esc(p)}">`).join("");
+    await Tracker.ready;
+    window.ITEMS_BY_ID = new Map(s.populair.map((i) => [i.id, i]));
+    $("popular").innerHTML = s.populair.length ? s.populair.map((i) => PropertyCard(i)).join("") : `<p class="muted">Het aanbod wordt opgehaald. Probeer het over een minuut opnieuw.</p>`;
+    const t = s.populair[0];
+    if (t) {
+      const tile = $("hero-tile"); tile.href = `/woning?id=${encodeURIComponent(t.id)}`; tile.hidden = false;
+      tile.innerHTML = `<div class="t-img" style="background-image:url('${esc(t.foto).replace(/'/g, "%27")}')"></div><div style="min-width:0"><small>Net geplaatst</small><b>${eur(t.huur)} <span style="display:inline;font-size:12.5px">/ maand</span></b><span>${esc(t.adres)}, ${esc(t.plaats)}</span></div>`;
+    }
+    renderCities(s.steden); renderProvinces(s.provincies);
+  } catch { $("popular").innerHTML = `<p class="muted">Kan het aanbod nu niet laden. Draait de server?</p>`; renderProvinces(); }
+})();
+</script>
+</body>
+</html>

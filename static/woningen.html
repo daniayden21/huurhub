@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Woningen · HuurHub</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="/style.css">
+<style>
+html, body { height: 100%; }
+body { display: flex; flex-direction: column; overflow: hidden; background: var(--gray-bg); }
+.app { flex: 1; min-height: 0; position: relative; }
+.view { position: absolute; inset: 0; }
+
+/* filterbalk */
+.bar { background: #fff; border-bottom: 1px solid var(--border); }
+.bar-in { display: flex; gap: 10px; align-items: center; padding-block: 12px; flex-wrap: wrap; }
+.bar .f-where { flex: 1 1 240px; max-width: 340px; }
+.bar .field { height: 46px; }
+.bar .f-sm { flex: 0 1 165px; }
+.bar .btn { height: 46px; }
+.fbadge { background: var(--orange); color: #fff; border-radius: 999px; font-size: 11.5px; min-width: 20px; height: 20px; display: inline-grid; place-items: center; padding: 0 6px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 12px; }
+.chips::-webkit-scrollbar { display: none; }
+
+/* resultaten + kaart */
+.split { display: grid; grid-template-columns: minmax(420px, 47%) minmax(0, 1fr); height: 100%; }
+.results { display: flex; flex-direction: column; min-height: 0; }
+.rhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px 10px; flex-wrap: wrap; }
+.rhead h1 { font-size: 20px; }
+.rhead .sub { font-size: 13px; color: var(--text-2); font-weight: 500; margin-top: 2px; display: flex; gap: 6px; align-items: center; }
+.rhead .sub i { width: 7px; height: 7px; border-radius: 50%; background: #22a06b; }
+.rhead .field { height: 40px; border-radius: 10px; }
+.newbar { margin: 0 24px 8px; background: var(--blue-bg); border-radius: var(--r-sm); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: 600; font-size: 14px; }
+.list { flex: 1; min-height: 0; overflow: auto; padding: 6px 24px 100px; display: grid; grid-auto-rows: max-content; gap: 14px; align-content: start; }
+.empty { background: #fff; border: 1px dashed var(--border); border-radius: var(--r-lg); padding: 48px 24px; text-align: center; color: var(--text-2); }
+.empty b { display: block; color: var(--navy); font-size: 18px; margin-bottom: 6px; }
+.empty .btn { margin-top: 16px; }
+.sk-row { height: 160px; }
+.more { justify-self: center; margin-top: 8px; }
+.mapcol { position: relative; border-left: 1px solid var(--border); }
+#map { position: absolute; inset: 0; }
+.maphint { position: absolute; z-index: 500; top: 14px; left: 50%; transform: translateX(-50%); background: #fff; border-radius: 999px; box-shadow: var(--shadow); padding: 7px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.legend { position: absolute; z-index: 500; left: 14px; bottom: 26px; background: #fff; border-radius: var(--r-sm); box-shadow: var(--shadow); padding: 10px 14px; font-size: 12.5px; font-weight: 600; display: grid; gap: 5px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; }
+.legend .ring { border: 2.5px solid var(--orange); width: 11px; height: 11px; }
+
+/* popup */
+.pop img { width: 100%; height: 150px; object-fit: cover; background: var(--blue-bg); }
+.pop .b { padding: 12px 14px 14px; display: grid; gap: 4px; }
+.pop .pr { font-size: 20px; font-weight: 800; }
+.pop .pr small { font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+.pop .ad { font-weight: 700; }
+.pop .pl { color: var(--text-2); font-size: 13px; }
+.pop .fx { display: flex; gap: 12px; color: var(--text-2); font-size: 13px; font-weight: 600; margin-top: 2px; }
+.pop .fx span { display: inline-flex; gap: 5px; align-items: center; }
+.pop .fx .icon { width: 15px; height: 15px; }
+.pop .acts { display: flex; gap: 8px; margin-top: 10px; }
+.pop .acts .btn { flex: 1; height: 40px; font-size: 14px; }
+.pop .acts .icon-btn { box-shadow: none; border: 1.5px solid var(--border); flex: none; }
+
+/* filterpaneel */
+.dbg { position: fixed; inset: 0; background: rgb(7 32 69 / .35); z-index: 1500; }
+.drawer { position: fixed; z-index: 1600; top: 0; right: 0; bottom: 0; width: min(440px, 100%); background: #fff; box-shadow: var(--shadow-lg); display: grid; grid-template-rows: auto 1fr auto; }
+.drawer header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+.drawer header h2 { font-size: 22px; }
+.drawer .body { overflow: auto; padding: 22px 24px 30px; display: grid; gap: 26px; align-content: start; }
+.drawer footer { display: flex; gap: 10px; padding: 16px 24px max(16px, env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+.drawer footer .btn { flex: 1; }
+.fg { display: grid; gap: 10px; }
+.fg h3 { font-size: 15px; }
+.fg p { font-size: 13px; color: var(--text-2); }
+.fg .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* mijn woningen */
+.page { overflow: auto; }
+.page .container { padding-block: 36px 80px; display: grid; gap: 24px; }
+.page h1 { font-size: 34px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.stat { background: #fff; border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; }
+.stat b { font-size: 28px; display: block; }
+.stat span { font-size: 13.5px; color: var(--text-2); font-weight: 600; }
+.alert { background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--orange); border-radius: var(--r); padding: 16px 20px; display: grid; gap: 6px; }
+.alert h3 { font-size: 16px; }
+.alert a { color: var(--orange); font-weight: 700; }
+.board { display: grid; grid-template-columns: repeat(5, minmax(230px, 1fr)); gap: 14px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.col { background: var(--blue-bg); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; align-content: start; min-height: 140px; }
+.col h3 { font-size: 14.5px; display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; }
+.col h3 span { background: #fff; border-radius: 999px; font-size: 12px; padding: 1px 9px; }
+.tc { background: #fff; border-radius: var(--r-sm); box-shadow: var(--shadow-sm); overflow: hidden; }
+.tc .img { height: 96px; background: var(--gray-bg) center/cover; }
+.tc .b { padding: 11px 12px 12px; display: grid; gap: 7px; }
+.tc .pr { font-weight: 800; }
+.tc .ad { font-weight: 700; font-size: 14px; line-height: 1.3; }
+.tc .ad small { display: block; color: var(--text-2); font-weight: 500; font-size: 12.5px; }
+.tc select, .tc textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 7px 9px; font-size: 13px; background: #fff; }
+.tc textarea { resize: vertical; min-height: 54px; }
+.tc .row { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-2); }
+.tc .row a { color: var(--navy); font-weight: 600; }
+.colempty { font-size: 13px; color: var(--text-2); padding: 6px; }
+
+.mswitch { display: none; }
+@media (max-width: 960px) {
+  .split { grid-template-columns: 1fr; }
+  body[data-m="kaart"] .results { display: none; }
+  body[data-m="lijst"] .mapcol { display: none; }
+  .mswitch { display: inline-flex; position: fixed; z-index: 1200; left: 50%; transform: translateX(-50%); bottom: max(20px, env(safe-area-inset-bottom)); box-shadow: var(--shadow-lg); }
+  .bar .f-where { flex-basis: 100%; max-width: none; }
+  .bar .f-sm { flex: 1 1 0; min-width: 0; padding-inline: 10px; }
+  .bar .f-sm .icon { display: none; }
+  .bar .bar-in { gap: 8px; }
+  .bar .btn { padding-inline: 12px; }
+  .bar .f-hide-m { display: none; }
+  .rhead, .list { padding-inline: 16px; }
+  .newbar { margin-inline: 16px; }
+  .legend { display: none; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .board { grid-template-columns: repeat(5, 260px); }
+}
+</style>
+</head>
+<body data-m="lijst">
+<div class="bar" id="bar"><div class="container">
+  <div class="bar-in">
+    <label class="field f-where"><span data-i="search"></span><input id="plaats" list="dl" placeholder="Plaats of postcode" autocomplete="off" aria-label="Plaats of postcode"></label>
+    <datalist id="dl"></datalist>
+    <label class="field f-sm"><select id="km" aria-label="Afstand"><option value="0">Alleen hier</option><option value="5">+ 5 km</option><option value="10">+ 10 km</option><option value="20">+ 20 km</option><option value="40">+ 40 km</option></select></label>
+    <label class="field f-sm"><span data-i="euro"></span><select id="max" aria-label="Maximale huur"><option value="500">Tot €500</option><option value="700">Tot €700</option><option value="900">Tot €900</option><option value="1100">Tot €1.100</option><option value="1300">Tot €1.300</option><option value="1600">Tot €1.600</option><option value="2000">Tot €2.000</option><option value="0">Geen max</option></select></label>
+    <label class="field f-sm f-hide-m"><span data-i="home"></span><select id="type" aria-label="Type woning"><option value="">Alle typen</option><option value="kamer">Kamer</option><option value="zelfstandig">Studio of appartement</option></select></label>
+    <button class="btn" id="openf" type="button"><span data-i="sliders"></span>Filters <span class="fbadge" id="fcount" hidden></span></button>
+  </div>
+  <div class="chips" id="chips">
+    <button class="chip orange" type="button" data-q="kans">Zonder wachttijd</button>
+    <button class="chip" type="button" data-q="nieuw">Nieuw</button>
+    <button class="chip" type="button" data-q="fav"><span data-i="heart"></span>Favorieten</button>
+    <button class="chip" type="button" data-q="sec:student"><span class="dot" style="background:var(--c-student)"></span>Studentenwoning</button>
+    <button class="chip" type="button" data-q="sec:sociaal"><span class="dot" style="background:var(--c-sociaal)"></span>Sociale huur</button>
+    <button class="chip" type="button" data-q="sec:middenhuur"><span class="dot" style="background:var(--c-midden)"></span>Middenhuur</button>
+    <button class="chip" type="button" data-q="sec:vrije sector"><span class="dot" style="background:var(--c-vrij)"></span>Vrije sector</button>
+  </div>
+</div></div>
+
+<div class="app">
+  <section class="view" id="v-zoeken">
+    <div class="split">
+      <div class="results">
+        <div class="rhead">
+          <div><h1 id="rtitle">Woningen laden…</h1><div class="sub" id="rsub"></div></div>
+          <label class="field"><select id="sort" aria-label="Sorteren"><option value="relevant">Aanbevolen</option><option value="prijs-op">Prijs (laag naar hoog)</option><option value="prijs-af">Prijs (hoog naar laag)</option><option value="nieuw">Nieuwste eerst</option><option value="sluit">Sluit het eerst</option><option value="m2">Grootste eerst</option></select></label>
+        </div>
+        <div id="newbar"></div>
+        <div class="list" id="list"></div>
+      </div>
+      <div class="mapcol">
+        <div id="map" aria-label="Kaart met huurwoningen"></div>
+        <div class="maphint" id="maphint">Zoom in om de huurprijzen te zien</div>
+        <div class="legend">
+          <div><i style="background:var(--c-sociaal)"></i>Sociale huur</div>
+          <div><i style="background:var(--c-student)"></i>Studentenwoning</div>
+          <div><i style="background:var(--c-midden)"></i>Middenhuur</div>
+          <div><i style="background:var(--c-vrij)"></i>Vrije sector</div>
+          <div><i class="ring"></i>Zonder wachttijd</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-navy mswitch" id="mswitch" type="button"></button>
+  </section>
+
+  <section class="view page" id="v-mijn" hidden><div class="container">
+    <div><h1>Mijn woningen</h1><p class="muted" style="max-width:64ch;margin-top:8px">Je favorieten en reacties op één plek. Zet een woning door naar de volgende stap als er iets verandert. Dit overzicht wordt op deze computer bewaard, ook als de advertentie offline gaat.</p></div>
+    <div class="stats" id="tstats"></div>
+    <div id="talert"></div>
+    <div class="board" id="board"></div>
+  </div></section>
+</div>
+
+<div id="drawer" hidden>
+  <div class="dbg" id="dbg"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dtitle">
+    <header><h2 id="dtitle">Filters</h2><button class="btn btn-ghost" id="closef" type="button" aria-label="Sluiten" style="width:44px;padding:0"><span data-i="x"></span></button></header>
+    <div class="body">
+      <div class="fg"><h3>Huurprijs per maand</h3><div class="two">
+        <label class="label">Minimaal<span class="field"><select id="dmin"><option value="0">Geen minimum</option><option value="300">€300</option><option value="500">€500</option><option value="700">€700</option><option value="900">€900</option><option value="1100">€1.100</option></select></span></label>
+        <label class="label">Maximaal<span class="field"><select id="dmax"><option value="500">€500</option><option value="700">€700</option><option value="900">€900</option><option value="1100">€1.100</option><option value="1300">€1.300</option><option value="1600">€1.600</option><option value="2000">€2.000</option><option value="0">Geen maximum</option></select></span></label>
+      </div></div>
+      <div class="fg"><h3>Type woning</h3><div class="opts" id="o-type"></div></div>
+      <div class="fg"><h3>Aantal kamers</h3><div class="opts" id="o-kamers"></div></div>
+      <div class="fg"><h3>Oppervlakte</h3><div class="opts" id="o-m2"></div></div>
+      <div class="fg"><h3>Beschikbaarheid</h3><div class="opts" id="o-besch"></div><p>Niet elke verhuurder vermeldt een datum. Woningen zonder datum vallen weg bij dit filter.</p></div>
+      <div class="fg"><h3>Hoe krijg je de woning?</h3><div class="opts" id="o-toew"></div><p>Bij loting, direct reageren en hospiteren telt je inschrijfduur niet.</p></div>
+      <div class="fg"><h3>Provincie</h3><label class="field"><select id="dprov"><option value="">Heel Nederland</option></select></label></div>
+      <div class="fg"><h3>Overig</h3>
+        <label class="check"><input type="checkbox" id="dhide"> Verberg woningen voor senioren, zorg en grote gezinnen</label>
+        <label class="check"><input type="checkbox" id="dtoeslag"> Alleen woningen met huurtoeslag</label>
+      </div>
+    </div>
+    <footer><button class="btn" id="resetf" type="button">Wis filters</button><button class="btn btn-primary" id="applyf" type="button">Toon woningen</button></footer>
+  </aside>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="/common.js"></script>
+<script src="/woningen.js"></script>
+</body>
+</html>

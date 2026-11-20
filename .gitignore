@@ -1,0 +1,33 @@
+# --- Geheimen en lokale configuratie (nooit committen) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.*
+credentials.*
+service-account*.json
+.netrc
+
+# --- Lokale gegevens van de server ---
+# favorieten, notities, contactberichten (persoonsgegevens), opgehaald aanbod en caches
+data/
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# --- Editor, besturingssysteem en hulpmiddelen ---
+.DS_Store
+.idea/
+.vscode/
+.claude/
+*.log
+
+# --- Oude eerste versie (alleen lokaal) ---
+archief/
